@@ -17,6 +17,10 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		parent::before();
 
 		$this->restrict('page', 'manage');
+		if ( ! $this->internal_request)
+		{
+			unset($this->template->menu->menu['Pages'][0]);
+		}
 	}
 
 	/**
@@ -27,6 +31,17 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 	}
 
 	/**
+	 * Display menu for page management
+	 */
+	public function action_menu() {
+		if ( ! $this->internal_request)
+		{
+			Request::instance()->redirect(Route::get('admin_cms')->uri());
+		}
+		$this->template->content = new View('cms/pages/widget/menu');
+	}
+
+	/**
 	 * Display list of pages
 	 */
 	public function action_list() {
@@ -34,7 +49,9 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 
 		if (count($pages) == 0)
 		{
-			$this->template->content = new View('cms/pages/none');
+			$this->template->content = $this->internal_request
+				? new View('cms/pages/widget/none')
+				: new View('cms/pages/none');
 			return;
 		}
 
@@ -48,7 +65,9 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 			->action(Route::get('admin_cms')->uri(array('action'=>'history')));
 		$grid->data($pages);
 
-		$this->template->content = new View('cms/pages/list');
+		$this->template->content = $this->internal_request
+			? new View('cms/pages/widget/list')
+			: new View('cms/pages/list');
 		$this->template->content->grid = $grid;
 	}
 
@@ -74,8 +93,10 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		}
 
 		$page->values($_POST);
-		$view = new View('cms/pages/form');
-		$view->legend = __('Edit Page');
+		$view = $this->internal_request
+			? new View('cms/pages/widget/form')
+			: new View('cms/pages/edit');
+		$view->legend = __('Edit').' "'.$page->title.'"';
 		$view->submit = __('Save');
 		$view->page   = $page;
 
@@ -146,12 +167,12 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$grid->column()->field('comments')->title('Comments')->callback(array($this, 'parse_comments'));
 		$grid->link('submit')->text('View Diff')
 			->action(Route::get('admin_cms')->uri(array('action'=>'diff')) );
-		$grid->link('button')->text('Back to List')
-			->action(Route::get('admin_cms')->uri() );
 		$grid->data($page->revisions);
 		Kohana::$log->add(Kohana::DEBUG, "Made it this far");
 
-		$this->template->content = new View('cms/pages/history');
+		$this->template->content = $this->internal_request
+			? new View('cms/pages/widget/history')
+			: new View('cms/pages/history');
 		$this->template->content->page = $page;
 		$this->template->content->grid = $grid;
 	}
@@ -202,8 +223,12 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 
 		$diff = Versioned::inline_diff($old_text, $new_text);
 
-		$this->template->content = new View('cms/pages/diff');
+		$this->template->content = $this->internal_request
+			? new View('cms/pages/widget/diff')
+			: new View('cms/pages/diff');
 		$this->template->content->page = $page;
+		$this->template->content->ver1 = $ver1;
+		$this->template->content->ver2 = $ver2;
 		$this->template->content->diff = $diff;
 	}
 

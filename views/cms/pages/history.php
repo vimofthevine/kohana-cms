@@ -1,8 +1,18 @@
-<section>
-    <h1><?php echo $page->title; ?> History</h1>
+<!--
+<div class="grid_4">
 <?php
-    echo form::open();
-    echo $grid;
-    echo form::close();
+	$url = Route::get('admin_cms')->uri(array('action'=>'menu'));
+	echo Request::factory($url)->execute()->response;
 ?>
-</section>
+</div>
+-->
+
+<div class="grid_16">
+<?php
+	$url = Route::get('admin_cms')->uri(array(
+		'action' => 'history',
+		'id' => $page->id,
+	));
+	echo Request::factory($url)->execute()->response;
+?>
+</div>

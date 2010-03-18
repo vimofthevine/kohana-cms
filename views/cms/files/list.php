@@ -7,7 +7,10 @@
 
 <div class="grid_12">
 <?php
-	$url = Route::get('admin_cms')->uri(array('action'=>'delete'));
+	$url = Route::get('admin_cms_asset')->uri(array(
+		'action' => 'read',
+		'file'   => Request::instance()->param('file'),
+	));
 	echo Request::factory($url)->execute()->response;
 ?>
 </div>
