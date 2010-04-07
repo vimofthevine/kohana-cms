@@ -1,4 +1,4 @@
-<h1>Page List</h1>
+<h2>Page List</h2>
 <p>
 	There are no pages at this time
 	(<?php echo Html::anchor(Route::get('admin_cms')->uri(array(

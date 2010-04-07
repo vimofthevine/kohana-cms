@@ -4,7 +4,7 @@
 	});
 </script>
 
-<h1><?php echo $legend; ?></h1>
+<h2><?php echo $legend; ?></h2>
 <?php echo Form::open(); ?> 
 
 <?php foreach ($page->inputs(FALSE) as $field=>$input): ?>

@@ -58,10 +58,10 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$grid = new Grid;
 		$grid->column()->field('id')->title('ID');
 		$grid->column()->field('title')->title('Title');
-		$grid->column()->field('version')->title('Version');
-		$grid->column('action')->title('Edit')->text('edit')
+		$grid->column()->field('version')->title('Ver');
+		$grid->column('action')->title('Edit')->text('Edit')->class('edit')
 			->action(Route::get('admin_cms')->uri(array('action'=>'edit')));
-		$grid->column('action')->title('Hist')->text('history')
+		$grid->column('action')->title('Hist')->text('History')->class('history')
 			->action(Route::get('admin_cms')->uri(array('action'=>'history')));
 		$grid->data($pages);
 
@@ -117,10 +117,9 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$this->template->scripts[] = 'http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js';
 		$this->template->scripts[] = Route::get('media')->uri(array('file'=>'js/markitup/jquery.markitup.js'));
 		$this->template->scripts[] = Route::get('media')->uri(array('file'=>'js/markitup/sets/default/set.js'));
-		//$style = Route::get('media')->uri(array('file'=>'js/markitup/skins/markitup/style.css'));
-		//$this->template->styles[$style] =
 		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/skins/markitup/style.css'))] = 'screen';
 		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/sets/default/style.css'))] = 'screen';
+		$this->template->styles[Route::get('media')->uri(array('file'=>'css/admin/width_fix.css'))] = 'screen';
 		$this->template->content = $view;
 	}
 

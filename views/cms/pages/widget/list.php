@@ -1,2 +1,2 @@
-<h1>Page List</h1>
+<h2>Page List</h2>
 <?php echo $grid; ?>

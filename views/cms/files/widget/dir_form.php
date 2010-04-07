@@ -1,4 +1,4 @@
-<h1>Create a Folder</h1>
+<h2>Create a Folder</h2>
 <?php echo Form::open(); ?> 
 
 <p>

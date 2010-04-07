@@ -32,7 +32,9 @@ Route::set('media', 'media(/<file>)', array('file' => '.+'))
 		'file'       => NULL,
 	));
 
-Route::set('page', '<page>', array('page' => '[^\/]+'))
+Route::set('page', '<page>', array(
+	'page' => '[^(admin)\/]+',
+	))
 	->defaults(array(
 		'controller' => 'page',
 		'action'     => 'load',

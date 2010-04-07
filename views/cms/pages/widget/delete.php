@@ -1,4 +1,4 @@
-<h1>Delete <?php echo $page->title ?>?</h1>
+<h2>Delete <?php echo $page->title ?>?</h2>
 <p>
 	Are you sure you want to delete <?php echo $page->title ?>?
 	This action cannot be undone.

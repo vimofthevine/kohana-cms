@@ -1,4 +1,4 @@
-<h1>Upload a File</h1>
+<h2>Upload a File</h2>
 <?php echo Form::open(NULL, array('enctype'=>'multipart/form-data')); ?> 
 
 <?php echo isset($errors['file']) ? '<p class="error">'.$errors['file'].'</p>': ''; ?> 
