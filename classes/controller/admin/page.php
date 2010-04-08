@@ -72,6 +72,34 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 	}
 
 	/**
+	 * Page list for dashboard (widget-ized)
+	 */
+	public function action_list_widget() {
+		if ( ! $this->internal_request)
+		{
+			Request::instance()->redirect( Route::get('admin_cms')->uri() );
+		}
+
+		$pages = Sprig::factory('page')->load(NULL, FALSE);
+
+		if (count($pages) == 0)
+		{
+			$this->template->content = new View('cms/pages/widget/none');
+			return;
+		}
+
+		$grid = new Grid;
+		$grid->column()->field('title')->title('Title');
+		$grid->column()->field('version')->title('Ver');
+		$grid->column('action')->title('Edit')->text('Edit')->class('edit')
+			->action(Route::get('admin_cms')->uri(array('action'=>'edit')));
+		$grid->data($pages);
+
+		$this->template->content = new View('cms/pages/widget/list');
+		$this->template->content->grid = $grid;
+	}
+
+	/**
 	 * Page editor
 	 */
 	public function action_edit() {
@@ -93,6 +121,7 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		}
 
 		$page->values($_POST);
+		$page->editor = $this->a1->get_user()->id;
 		$view = $this->internal_request
 			? new View('cms/pages/widget/form')
 			: new View('cms/pages/edit');
@@ -116,10 +145,9 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 
 		$this->template->scripts[] = 'http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js';
 		$this->template->scripts[] = Route::get('media')->uri(array('file'=>'js/markitup/jquery.markitup.js'));
-		$this->template->scripts[] = Route::get('media')->uri(array('file'=>'js/markitup/sets/default/set.js'));
+		$this->template->scripts[] = Route::get('media')->uri(array('file'=>'js/markitup/sets/html/set.js'));
 		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/skins/markitup/style.css'))] = 'screen';
-		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/sets/default/style.css'))] = 'screen';
-		$this->template->styles[Route::get('media')->uri(array('file'=>'css/admin/width_fix.css'))] = 'screen';
+		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/sets/html/style.css'))] = 'screen';
 		$this->template->content = $view;
 	}
 
@@ -161,7 +189,7 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$grid->column('radio')->field('version')->title('Version 1')->name('ver1');
 		$grid->column('radio')->field('version')->title('Version 2')->name('ver2');
 		$grid->column()->field('version')->title('Revision');
-		$grid->column()->field('editor')->title('Editor')->member('username');
+		$grid->column()->field('editor')->title('Editor')->callback(array($this, 'print_username'));
 		$grid->column('date')->field('date')->title('Date');
 		$grid->column()->field('comments')->title('Comments')->callback(array($this, 'parse_comments'));
 		$grid->link('submit')->text('View Diff')
@@ -190,6 +218,17 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		}
 		$return .= '</ul>'.PHP_EOL;
 		return $return;
+	}
+
+	/**
+	 * Print username callback
+	 */
+	public function print_username($user) {
+		if ( ! $user->loaded())
+		{
+			$user->load();
+		}
+		return $user->username;
 	}
 
 	/**
@@ -230,6 +269,7 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$this->template->content->ver2 = $ver2;
 		$this->template->content->diff = $diff;
 	}
+
 
 }
 
