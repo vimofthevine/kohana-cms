@@ -22,10 +22,7 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 		parent::before();
 
 		$this->restrict('asset', 'manage');
-		if ( ! $this->internal_request)
-		{
-			unset($this->template->menu->menu['Pages'][0]);
-		}
+		unset($this->template->menu->menu['Pages'][0]);
 
 		$this->folder = DOCROOT.Kohana::config('cms.upload.folder').'/';
 	}
@@ -38,9 +35,18 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 	}
 
 	/**
+	 * Generate menu for asset management
+	 */
+	private function menu() {
+		return View::factory('cms/pages/menu');
+	}
+
+	/**
 	 * Read and display contents of folder or file
 	 */
 	public function action_read() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::action_read');
+
 		$dir = Request::instance()->param('file');
 		if (is_dir($this->folder.$dir))
 		{
@@ -56,10 +62,18 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 	 * Show file
 	 */
 	private function file($file) {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::file');
+
+		// Disable auto rendering
 		$this->auto_render = FALSE;
-		$request = Request::instance();
+
+		// Get file parameters
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
 		$path = $this->folder.$file;
+
+		$request = Request::instance();
+
+		// Return file contents
 		if (is_file($path))
 		{
 			$request->response = file_get_contents($path);
@@ -70,6 +84,7 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 			$request->status = 404;
 		}
 
+		// Set content type header
 		$request->headers['Content-Type'] = File::mime_by_ext($ext);
 	}
 
@@ -77,11 +92,7 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 	 * Show contents of folder
 	 */
 	private function dir($dir) {
-		$this->template->content = $this->internal_request
-			? new View('cms/files/widget/list')
-			: new View('cms/files/list');
-		$this->template->content->current_dir = empty($dir) ? 'Root' : $dir;
-		$this->template->content->dir = $dir;
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::dir');
 
 		$folders = array();
 		$files = array();
@@ -130,20 +141,43 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 		$grid->data($folders);
 		$grid->data($files);
 
-		$this->template->content->grid = $grid;
+		$hmvc = View::factory('cms/files/hmvc/list')
+			->set('current_dir', empty($dir) ? 'Root' : $dir)
+			->set('dir', $dir)
+			->set('grid', $grid);
+
+		$view = View::factory('cms/files/list')
+			->set('menu', $this->menu())
+			->set('contents', $hmvc);
+
+		// Set request response
+		$this->template->content = $this->internal_request ? $hmvc : $view;
 	}
 
 	/**
 	 * Create a folder
 	 */
 	public function action_create() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::action_create');
+
 		$dir = Request::instance()->param('file');
 
 		// Restrict access
 		if ( ! $this->a2->allowed('asset', 'create'))
 		{
-			Message::instance()->error('You do not have permission to create new folders.');
-			Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			$message = __('You do not have permission to create new folders.');
+
+			// Return message if an ajax request
+			if (Request::$is_ajax)
+			{
+				$this->template->content = $message;
+			}
+			// Else set flash message and redirect
+			else
+			{
+				Message::instance()->error($message);
+				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			}
 		}
 
 		$post = Validate::factory($_POST)
@@ -160,41 +194,79 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 				$path = $this->folder.$directory.$folder;
 
 				mkdir($path, 0777);
-				Message::instance()->info('The folder, :name, has been created.', array(':name'=>$directory.$folder));
-				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				$message = __('The folder, :name, has been created.', array(':name'=>$directory.$folder));
+
+				// Return message if an ajax request
+				if (Request::$is_ajax)
+				{
+					$this->template->content = $message;
+				}
+				// Else set flash message and redirect
+				else
+				{
+					Message::instance()->info($message);
+					Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				}
 			}
 			else
 			{
-				$view = $this->internal_request
-					? new View('cms/files/widget/dir_form')
-					: new View('cms/files/create');
-				$view->dir = $dir;
-				$view->folder = $post['directory'];
-				$view->errors = $post->errors('cms');
+				$hmvc = View::factory('cms/files/hmvc/dir_form')
+					->set('dir', $dir)
+					->set('folder', $post['directory'])
+					->set('errors', $post->errors('cms'));
 
-				$this->template->content = $view;
+				$view = View::factory('cms/files/create')
+					->set('menu', $this->menu())
+					->set('form', $hmvc);
+
+				// Set request response
+				$this->template->content = $this->internal_request ? $hmvc : $view;
 			}
 
 		}
 		catch (Exception $e)
 		{
 			Kohana::$log->add(Kohana::ERROR, 'An error occured creating folder, '.$path.'. '.$e->getMessage());
-			Message::instance()->error('The folder, :name, could not be created.', array(':name'=>$directory.$folder));
-			Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			$message = __('The folder, :name, could not be created.', array(':name'=>$directory.$folder));
+
+			// Return message if an ajax request
+			if (Request::$is_ajax)
+			{
+				$this->template->content = $message;
+			}
+			// Else set flash message and redirect
+			else
+			{
+				Message::instance()->error($message);
+				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			}
 		}
 	}
 
 	/**
-	 * UPload a file
+	 * Upload a file
 	 */
 	public function action_upload() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::action_upload');
+
 		$dir = Request::instance()->param('file');
 
 		// Restrict access
 		if ( ! $this->a2->allowed('asset', 'upload'))
 		{
-			Message::instance()->error('You do not have permission to upload files.');
-			Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			$message = __('You do not have permission to upload files.');
+
+			// Return message if an ajax request
+			if (Request::$is_ajax)
+			{
+				$this->template->content = $message;
+			}
+			// Else set flash message and redirect
+			else
+			{
+				Message::instance()->error($message);
+				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			}
 		}
 
 		$post = Validate::factory(array_merge($_POST, $_FILES))
@@ -203,7 +275,6 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 				'Upload::valid' => array(),
 				'Upload::not_empty' => array(),
 				'Upload::type' => array('Upload::type' => Kohana::config('cms.upload.types')),
-				//'Upload::type' => array('Upload::type' => array('jpg','png','gif')),
 				'Upload::size' => array('1M'))
 			)
 			->callback('name', array($this, 'filename_available'));
@@ -224,27 +295,52 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 
 				Kohana::$log->add(Kohana::DEBUG, "Saving uploaded file to ".$path.$name);
 				Upload::save($_FILES['file'], $name, $path, "0777");
-				Message::instance()->info('The file, :name, has been created.', array(':name'=>$directory.$name));
-				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+
+				$message = __('The file, :name, has been created.', array(':name'=>$directory.$name));
+
+				// Return message if an ajax request
+				if (Request::$is_ajax)
+				{
+					$this->template->content = $message;
+				}
+				// Else set flash message and redirect
+				else
+				{
+					Message::instance()->info($message);
+					Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				}
 			}
 			else
 			{
-				$view = $this->internal_request
-					? new View('cms/files/widget/file_form')
-					: new View('cms/files/upload');
-				$view->dir = $dir;
-				//$view->values = array_intersect_key($post->as_array(), $_POST);
-				$view->name = $post['name'];
-				$view->errors = $post->errors('cms');
+				$hmvc = View::factory('cms/files/hmvc/file_form')
+					->set('dir', $dir)
+					->set('name', $post['name'])
+					->set('errors', $post->errors('cms'));
 
-				$this->template->content = $view;
+				$view = View::factory('cms/files/upload')
+					->set('menu', $this->menu())
+					->set('form', $hmvc);
+
+				// Set request response
+				$this->template->content = $this->internal_request ? $hmvc : $view;
 			}
 		}
 		catch (Exception $e)
 		{
 			Kohana::$log->add(Kohana::ERROR, 'An error occured creating file, '.$path.$name.'. '.$e->getMessage());
-			Message::instance()->error('The file, :name, could not be created.', array(':name'=>$directory.$name));
-			Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			$message = __('The file, :name, could not be created.', array(':name'=>$directory.$name));
+
+			// Return message if an ajax request
+			if (Request::$is_ajax)
+			{
+				$this->template->content = $message;
+			}
+			// Else set flash message and redirect
+			else
+			{
+				Message::instance()->error($message);
+				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+			}
 		}
 	}
 
@@ -252,6 +348,8 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 	 * Delete a folder or file
 	 */
 	public function action_delete() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::action_delete');
+
 		if (isset($_POST['no']))
 		{
 			Request::instance()->redirect( Route::get('admin_cms_asset')->uri() );
@@ -265,60 +363,134 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 			// Restrict access
 			if ( ! $this->a2->allowed('asset', 'delete_folder'))
 			{
-				Message::instance()->error('You do not have permission to delete folders.');
-				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				$message = __('You do not have permission to delete folders.');
+
+				// Return message if an ajax request
+				if (Request::$is_ajax)
+				{
+					$this->template->content = $message;
+				}
+				// Else set flash message and redirect
+				else
+				{
+					Message::instance()->error($message);
+					Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				}
 			}
 
 			if (isset($_POST['yes']))
 			{
 				try {
 					$this->delete_dir($dir);
-					Message::instance()->info('The folder, :name, has been deleted.', array(':name'=>$dir));
-					Request::instance()->redirect( Route::get('admin_cms_asset')->uri() );
+					$message = __('The folder, :name, has been deleted.', array(':name'=>$dir));
+
+					// Return message if an ajax request
+					if (Request::$is_ajax)
+					{
+						$this->template->content = $message;
+					}
+					// Else set flash message and redirect
+					else
+					{
+						Message::instance()->info($message);
+						Request::instance()->redirect( Route::get('admin_cms_asset')->uri() );
+					}
 				}
 				catch (Exception $e)
 				{
 					Kohana::$log->add(Kohana::ERROR, 'An error occured deleting folder, '.$path.'. '.$e->getMessage());
-					Message::instance()->error('The folder, :name, could not be deleted.', array(':name'=>$dir));
-					Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+					$message = __('The folder, :name, could not be deleted.', array(':name'=>$dir));
+
+					// Return message if an ajax request
+					if (Request::$is_ajax)
+					{
+						$this->template->content = $message;
+					}
+					// Else set flash message and redirect
+					else
+					{
+						Message::instance()->error($message);
+						Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+					}
 				}
 			}
 
-			$view = $this->internal_request
-				? new View('cms/files/widget/delete_dir')
-				: new View('cms/files/delete');
-			$view->dir = $dir;
-			$this->template->content = $view;
+			$hmvc = View::factory('cms/files/hmvc/delete_dir')
+				->set('dir', $dir);
+
+			$view = View::factory('cms/files/delete')
+				->set('menu', $this->menu())
+				->set('confirm', $hmvc);
+
+			// Set request response
+			$this->template->content = $this->internal_request ? $hmvc : $view;
 		}
 		else
 		{
 			// Restrict access
 			if ( ! $this->a2->allowed('asset', 'delete_file'))
 			{
-				Message::instance()->error('You do not have permission to delete files.');
-				Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				$message = __('You do not have permission to delete files.');
+
+				// Return message if an ajax request
+				if (Request::$is_ajax)
+				{
+					$this->template->content = $message;
+				}
+				// Else set flash message and redirect
+				else
+				{
+					Message::instance()->error($message);
+					Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+				}
 			}
 
 			if (isset($_POST['yes']))
 			{
 				try {
 					$this->delete_file($dir);
-					Message::instance()->info('The file, :name, has been deleted.', array(':name'=>$dir));
-					Request::instance()->redirect( Route::get('admin_cms_asset')->uri() );
+					$message = __('The file, :name, has been deleted.', array(':name'=>$dir));
+
+					// Return message if an ajax request
+					if (Request::$is_ajax)
+					{
+						$this->template->content = $message;
+					}
+					// Else set flash message and redirect
+					else
+					{
+						Message::instance()->info($message);
+						Request::instance()->redirect( Route::get('admin_cms_asset')->uri() );
+					}
 				}
 				catch (Exception $e)
 				{
 					Kohana::$log->add(Kohana::ERROR, 'An error occured deleting file, '.$path.'. '.$e->getMessage());
-					Message::instance()->error('The file, :name, could not be deleted.', array(':name'=>$dir));
-					Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+					$message = __('The file, :name, could not be deleted.', array(':name'=>$dir));
+
+					// Return message if an ajax request
+					if (Request::$is_ajax)
+					{
+						$this->template->content = $message;
+					}
+					// Else set flash message and redirect
+					else
+					{
+						Message::instance()->error($message);
+						Request::instance()->redirect( Route::get('admin_cms_asset')->uri(array('file'=>$dir)) );
+					}
 				}
 			}
 
-			$view = $this->internal_request
-				? new View('cms/files/widget/delete_file')
-				: new View('cms/files/delete');
-			$view->file = $dir;
-			$this->template->content = $view;
+			$hmvc = View::factory('cms/files/hmvc/delete_file')
+				->set('file', $dir);
+
+			$view = View::factory('cms/files/delete')
+				->set('menu', $this->menu())
+				->set('confirm', $hmvc);
+
+			// Set request response
+			$this->template->content = $this->internal_request ? $hmvc : $view;
 		}
 	}
 

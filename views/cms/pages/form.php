@@ -2,8 +2,6 @@
 <?php echo $menu ?> 
 </div>
 
-<div class="grid_8">
+<div class="grid_12">
 <?php echo $form ?> 
 </div>
-
-<div class="grid_4">&nbsp;</div>
