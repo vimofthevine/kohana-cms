@@ -15,31 +15,53 @@ class Controller_Cms_Page extends Controller_Template_Website {
 	 * or display 404 error page.
 	 */
 	public function action_load() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Cms_Page::action_load');
+
 		$page = Request::instance()->param('page');
 		$page = Security::xss_clean($page);
+
+		// Check if page is in cache
+		if (Kohana::$caching === TRUE AND ($file = Kohana::cache('page_'.$page)))
+		{
+			$this->template->content = $file;
+			return;
+		}
+
+		// Default values
+		$contents = NULL;
+		$found = FALSE;
 
 		// Check if page is in database
 		$db = DB::select('title','text')
 			->from('pages')
 			->where('slug','=',$page)
 			->execute();
+
 		if ($db->count() == 1)
 		{
-			$page = $db->current();
-			$page = $page['text'];
+			$contents = $db->current();
+			$contents = $contents['text'];
+			$found = TRUE;
 		}
 		// Check if page is a static view
 		else if (Kohana::find_file('views', 'static/'.$page))
 		{
-			$page = new View('static/'.$page);
+			$contents = new View('static/'.$page);
+			$found = TRUE;
 		}
 		// Show 404
 		else
 		{
 			Kohana::$log->add(Kohana::ERROR, 'Page controller error loading non-existent page, '.$page);
-			$page = new View('errors/404');
+			$contents = new View('errors/404');
 		}
-		$this->template->content = $page;
+
+		if (Kohana::$caching === TRUE AND $found)
+		{
+			Kohana::cache('page_'.$page, $contents);
+		}
+
+		$this->template->content = $contents;
 	}
 }
 

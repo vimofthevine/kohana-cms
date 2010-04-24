@@ -64,28 +64,18 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 	private function file($file) {
 		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::file');
 
-		// Disable auto rendering
-		$this->auto_render = FALSE;
-
-		// Get file parameters
-		$ext = pathinfo($file, PATHINFO_EXTENSION);
-		$path = $this->folder.$file;
-
-		$request = Request::instance();
-
-		// Return file contents
-		if (is_file($path))
+		// Check if file exists
+		if (is_file($this->folder.$file))
 		{
-			$request->response = file_get_contents($path);
+			$url = URL::site(Kohana::config('cms.upload.folder').'/'.$file, TRUE);
+			Request::instance()->redirect($url);
 		}
 		else
 		{
 			Kohana::$log->add(Kohana::ERROR, 'Asset controller error while loading file, '.$file);
-			$request->status = 404;
+			$this->request->status = 404;
+			$this->template->content = View::factory('errors/404');
 		}
-
-		// Set content type header
-		$request->headers['Content-Type'] = File::mime_by_ext($ext);
 	}
 
 	/**

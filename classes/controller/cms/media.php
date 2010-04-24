@@ -10,12 +10,16 @@
  */
 class Controller_Cms_Media extends Controller {
 
+	/**
+	 * Return a file from the media folder in the cascading file system
+	 */
 	public function action_file() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Cms_Media::action_file');
+
 		$request = Request::instance();
 		$file = $request->param('file');
 
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
-
 		$file = substr($file, 0, -(strlen($ext) + 1));
 
 		if ($file = Kohana::find_file('media', $file, $ext))
@@ -31,18 +35,21 @@ class Controller_Cms_Media extends Controller {
 		$request->headers['Content-Type'] = File::mime_by_ext($ext);
 	}
 
+	/**
+	 * Return a php file from the media/css folder, with the css mime type
+	 */
 	public function action_css() {
+		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Cms_Media::action_css');
+
 		$request = Request::instance();
 		$file = $request->param('file');
 
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
-
 		$file = substr($file, 0, -(strlen($ext) + 1));
 
 		if ($file = Kohana::find_file('media/css', $file, 'php'))
 		{
 			$request->response = require $file;
-			//$request->response = file_get_contents($file);
 		}
 		else
 		{
