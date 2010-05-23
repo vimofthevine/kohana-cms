@@ -73,9 +73,9 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$grid->column()->field('title')->title('Title');
 		$grid->column()->field('version')->title('Ver');
 		$grid->column('action')->title('Edit')->text('Edit')->class('edit')
-			->action(Route::get('admin_main')->uri(array('controller'=>'page', 'action'=>'edit')));
+			->route(Route::get('admin_main'))->params(array('controller'=>'page', 'action'=>'edit'));
 		$grid->column('action')->title('Hist')->text('History')->class('history')
-			->action(Route::get('admin_main')->uri(array('controller'=>'page', 'action'=>'history')));
+			->route(Route::get('admin_main'))->params(array('controller'=>'page', 'action'=>'history'));
 		$grid->data($pages);
 
 		// Setup HMVC view with data
@@ -122,7 +122,7 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$grid->column()->field('title')->title('Title');
 		$grid->column()->field('version')->title('Ver');
 		$grid->column('action')->title('Edit')->text('Edit')->class('edit')
-			->action(Route::get('admin_main')->uri(array('controller'=>'page', 'action'=>'edit')));
+			->route(Route::get('admin_main'))->params(array('controller'=>'page', 'action'=>'edit'));
 		$grid->data($pages);
 
 		// Set request response

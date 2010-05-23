@@ -122,12 +122,12 @@ class Controller_Admin_Asset extends Controller_Template_Admin {
 		ksort($files);
 
 		$grid = new Grid;
-		$grid->column('action')->field('path')->title('File/Folder Name')->display_field('name')
-			->action(Route::get('admin_cms_asset')->uri(array('action'=>'read')));
+		$grid->column('action')->field('path')->title('File/Folder Name')->text('{name}')
+			->route(Route::get('admin_cms_asset'))->params(array('action'=>'read'))->param('file');
 		$grid->column()->field('size')->title('Size');
 		$grid->column()->field('date')->title('Date Modified');
 		$grid->column('action')->field('path')->title('Actions')->text('Delete')->class('delete')
-			->action(Route::get('admin_cms_asset')->uri(array('action'=>'delete')));
+			->route(Route::get('admin_cms_asset'))->params(array('action'=>'delete'))->param('file');
 		$grid->data($folders);
 		$grid->data($files);
 

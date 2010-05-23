@@ -13,9 +13,10 @@ class Model_Page extends Versioned_Sprig {
 	public function _init() {
 		parent::_init();
 		$this->_fields += array(
-			'title' => new Sprig_Field_Char(array(
+			'title' => new Sprig_Field_Tracked(array(
 				'empty' => TRUE,
 			)),
+			'text'  => new Sprig_Field_Versioned,
 			'revisions' => new Sprig_Field_HasMany(array(
 				'model' => 'Page_Revision',
 			)),
