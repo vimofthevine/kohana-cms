@@ -1,4 +1,4 @@
-<h2>Upload a File</h2>
+<h2><?php echo __('Upload a File') ?></h2>
 <?php echo Form::open(NULL, array('enctype'=>'multipart/form-data')); ?> 
 
 <?php echo isset($errors['file']) ? '<p class="error">'.$errors['file'].'</p>': ''; ?> 
@@ -7,10 +7,10 @@
 	<?php echo Form::file('file'); ?>
 </p>
 
-<?php echo isset($errors['name']) ? '<p class="error">'.$errors['name'].'</p>': ''; ?> 
+<?php echo isset($errors['filename']) ? '<p class="error">'.$errors['filename'].'</p>': ''; ?> 
 <p>
-	<?php echo Form::label('name', 'New File Name <small>(optional, without the filetype extension)</small>'); ?> 
-	<?php echo Form::input('name', $name); ?> 
+	<?php echo Form::label('filename', 'New File Name <small>(optional, without the filetype extension)</small>'); ?> 
+	<?php echo Form::input('filename', $file->name); ?> 
 </p>
 
 <p class="submit">

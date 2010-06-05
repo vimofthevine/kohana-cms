@@ -9,13 +9,10 @@
 <?php else:
 	// Create page list
 	$grid = new Grid;
-	$grid->column()->field('id')->title('ID');
 	$grid->column()->field('title')->title('Title');
 	$grid->column()->field('version')->title('Ver');
-	$grid->column('action')->title('Actions')->text('Edit')->class('edit')
+	$grid->column('action')->title('Edit')->text('Edit')->class('edit')
 		->route(Route::get('admin/cms'))->params(array('action'=>'edit'));
-	$grid->column('action')->title('')->text('History')->class('history')
-		->route(Route::get('admin/cms'))->params(array('action'=>'history'));
 	$grid->data($pages);
 
 	echo $grid;

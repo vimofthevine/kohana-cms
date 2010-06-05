@@ -3,7 +3,8 @@
 /**
  * CMS page model
  *
- * @package     CMS
+ * @package     Admin
+ * @category    Model
  * @author      Kyle Treubig
  * @copyright   (c) 2010 Kyle Treubig
  * @license     MIT

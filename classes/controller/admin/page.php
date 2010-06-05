@@ -3,47 +3,59 @@
 /**
  * Admin page controller
  *
- * @package     Controller
+ * @package     Admin
+ * @category    Controller
  * @author      Kyle Treubig
  * @copyright   (c) 2010 Kyle Treubig
  * @license     MIT
  */
-class Controller_Admin_Page extends Controller_Template_Admin {
+class Controller_Admin_Page extends Controller_Admin {
 
-	/**
-	 * Register controller as an admin controller
-	 */
-	public function before() {
-		parent::before();
+	protected $_resource = 'page';
 
-		$this->restrict('page', 'manage');
-		unset($this->template->menu->menu['Pages'][0]);
-	}
+	protected $_resource_required = array('edit', 'history', 'diff');
 
-	/**
-	 * Default action to list
-	 */
-	public function action_index() {
-		$this->action_list();
-	}
+	protected $_acl_map = array(
+		'edit'    => 'edit',
+		'history' => 'history',
+		'diff'    => 'history',
+		'default' => 'manage',
+	);
+
+	protected $_acl_required = 'all';
+
+	protected $_view_map = array(
+		'history' => 'admin/layout/full_width',
+		'default' => 'admin/layout/wide_column_with_menu',
+	);
+
+	protected $_current_nav = 'admin/page';
 
 	/**
 	 * Generate menu for page management
 	 */
-	private function menu() {
-		return View::factory('cms/pages/menu');
+	protected function _menu() {
+		return View::factory('cms/menu');
 	}
 
 	/**
-	 * Display menu for page management
+	 * Load a specified user
 	 */
-	public function action_menu() {
-		if ( ! $this->internal_request)
+	protected function _load_resource() {
+		$id = $this->request->param('id', 0);
+		$this->_resource = Sprig::factory('page', array('id'=>$id))->load();
+		if ( ! $this->_resource->loaded())
 		{
-			Request::instance()->redirect(Route::get('admin_main')->uri(array('controller'=>'page')));
+			throw new Kohana_Exception('That page does not exist.', NULL, 404);
 		}
+	}
 
-		$this->template->content = new View('cms/pages/menu');
+	/**
+	 * Redirect index action to list
+	 */
+	public function action_index() {
+		$this->request->redirect( $this->request->uri(
+			array('action' => 'list')), 301);
 	}
 
 	/**
@@ -51,83 +63,18 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 	 */
 	public function action_list() {
 		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Page::action_list');
-
-		$pages = Sprig::factory('page')->load(NULL, FALSE);
-
-		// Check if there are any pages to display
-		if (count($pages) == 0)
+		if ( $this->_internal)
 		{
-			$hmvc = View::factory('cms/pages/hmvc/none');
-
-			$view = View::factory('cms/pages/list')
-				->set('menu', $this->menu())
-				->set('list', $hmvc);
-
-			$this->template->content = $this->internal_request ? $hmvc : $view;
-			return;
+			$this->template->content = View::factory('cms/pages/list_widget')
+				->bind('pages', $pages);
 		}
-
-		// Create page list
-		$grid = new Grid;
-		$grid->column()->field('id')->title('ID');
-		$grid->column()->field('title')->title('Title');
-		$grid->column()->field('version')->title('Ver');
-		$grid->column('action')->title('Edit')->text('Edit')->class('edit')
-			->route(Route::get('admin_main'))->params(array('controller'=>'page', 'action'=>'edit'));
-		$grid->column('action')->title('Hist')->text('History')->class('history')
-			->route(Route::get('admin_main'))->params(array('controller'=>'page', 'action'=>'history'));
-		$grid->data($pages);
-
-		// Setup HMVC view with data
-		$hmvc = View::factory('cms/pages/hmvc/list')
-			->set('grid', $grid);
-
-		// Setup template view
-		$view = View::factory('cms/pages/list')
-			->set('menu', $this->menu())
-			->set('list', $hmvc);
-
-		// Set request response
-		$this->template->content = $this->internal_request ? $hmvc : $view;
-	}
-
-	/**
-	 * Page list for dashboard (widget-ized)
-	 */
-	public function action_list_widget() {
-		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Page::action_list_widget');
-
-		if ( ! $this->internal_request)
+		else
 		{
-			Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
+			$this->template->content = View::factory('cms/pages/list')
+				->bind('pages', $pages);
 		}
 
 		$pages = Sprig::factory('page')->load(NULL, FALSE);
-
-		// Check if there are any pages to display
-		if (count($pages) == 0)
-		{
-			$hmvc = View::factory('cms/pages/hmvc/none');
-
-			$view = View::factory('cms/pages/list')
-				->set('menu', $this->menu())
-				->set('list', $hmvc);
-
-			$this->template->content = $this->internal_request ? $hmvc : $view;
-			return;
-		}
-
-		// Create page list
-		$grid = new Grid;
-		$grid->column()->field('title')->title('Title');
-		$grid->column()->field('version')->title('Ver');
-		$grid->column('action')->title('Edit')->text('Edit')->class('edit')
-			->route(Route::get('admin_main'))->params(array('controller'=>'page', 'action'=>'edit'));
-		$grid->data($pages);
-
-		// Set request response
-		$this->template->content = View::factory('cms/pages/hmvc/list')
-			->set('grid', $grid);
 	}
 
 	/**
@@ -135,77 +82,34 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 	 */
 	public function action_edit() {
 		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Page::action_edit');
-
-		$id = Request::instance()->param('id');
-		$page = Sprig::factory('page', array('id'=>$id))->load();
-
-		// If page is invalid, return to list
-		if ( ! $page->loaded())
-		{
-			$message = __('That page does not exist');
-
-			// Return message if an ajax request
-			if (Request::$is_ajax)
-			{
-				$this->template->content = $message;
-			}
-			// Else set flash message and redirect
-			else
-			{
-				Message::instance()->error($message);
-				Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-			}
-		}
-
-		// Restrict access
-		if ( ! $this->a2->allowed($page, 'edit'))
-		{
-			$message = __('You do not have permission to modify :title.', array(':title'=>$page->title));
-
-			// Return message if an ajax request
-			if (Request::$is_ajax)
-			{
-				$this->template->content = $message;
-			}
-			// Else set flash message and redirect
-			else
-			{
-				Message::instance()->error($message);
-				Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-			}
-		}
-
-		$page->values($_POST);
-		$page->editor = $this->a1->get_user()->id;
-
-		// Setup HMVC view with data
-		$hmvc = View::factory('cms/pages/hmvc/form')
-			->set('legend', __('Edit').' "'.$page->title.'"')
+		$this->template->content = View::factory('cms/pages/form')
+			->bind('legend', $legend)
 			->set('submit', __('Save'))
-			->set('page', $page);
+			->bind('page', $this->_resource)
+			->bind('errors', $errors);
 
-		if (count($_POST))
+		// Bind locally
+		$page = & $this->_resource;
+		$legend = __('Edit :title', array(':title' => $page->title));
+
+		if ($_POST)
 		{
+			$page->values($_POST);
+			$page->editor = $this->a1->get_user()->id;
+
 			try
 			{
 				$page->update();
-				$message = __('The page, :title, has been updated.', array(':title'=>$page->title));
 
-				// Return message if an ajax request
-				if (Request::$is_ajax)
-				{
-					$this->template->content = $message;
-				}
-				// Else set flash message and redirect
-				else
-				{
-					Message::instance()->info($message);
-					Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-				}
+				Message::instance()->info('The page, :title, has been updated.',
+					array(':title' => $page->title));
+
+				if ( ! $this->_internal)
+					$this->request->redirect( $this->request->uri(array('action'=>'list')) );
 			}
 			catch (Validate_Exception $e)
 			{
-				$hmvc->errors = count($_POST) ? $e->array->errors('cms') : array();
+				$errors = $e->array->errors('admin');
 			}
 		}
 
@@ -215,14 +119,6 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$this->template->scripts[] = Route::get('media')->uri(array('file'=>'js/markitup/sets/html/set.js'));
 		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/skins/markitup/style.css'))] = 'screen';
 		$this->template->styles[Route::get('media')->uri(array('file'=>'js/markitup/sets/html/style.css'))] = 'screen';
-
-		// Setup template view
-		$view = View::factory('cms/pages/form')
-			->set('menu', $this->menu())
-			->set('form', $hmvc);
-
-		// Set request response
-		$this->template->content = $this->internal_request ? $hmvc : $view;
 	}
 
 	/**
@@ -231,111 +127,22 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 	public function action_history() {
 		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Page::action_history');
 
-		$id = Request::instance()->param('id');
-		$page = Sprig::factory('page', array('id'=>$id))->load();
-
-		// If page is invalid, return to list
-		if ( ! $page->loaded())
-		{
-			$message = __('That page does not exist');
-
-			// Return message if an ajax request
-			if (Request::$is_ajax)
-			{
-				$this->template->content = $message;
-			}
-			// Else set flash message and redirect
-			else
-			{
-				Message::instance()->error($message);
-				Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-			}
-		}
-
-		// Restrict access
-		if ( ! $this->a2->allowed($page, 'edit'))
-		{
-			$message = __('You do not have permission to view revision history for :title.', array(':title'=>$page->title));
-
-			// Return message if an ajax request
-			if (Request::$is_ajax)
-			{
-				$this->template->content = $message;
-			}
-			// Else set flash message and redirect
-			else
-			{
-				Message::instance()->error($message);
-				Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-			}
-		}
-
 		$ver1 = isset($_POST['ver1']) ? $_POST['ver1'] : NULL;
 		$ver2 = isset($_POST['ver2']) ? $_POST['ver2'] : NULL;
 
 		if ($ver1 !== NULL AND $ver2 !== NULL)
 		{
-			Request::instance()->redirect( Route::get('admin_cms_diff')->uri(array(
-				'id'         => $id,
+			$this->request->redirect( Route::get('admin/cms/diff')->uri(array(
+				'id'         => $this->_resource->id,
 				'ver1'       => $_POST['ver1'],
 				'ver2'       => $_POST['ver2'],
 			)) );
 		}
 
-		// Create revision list
-		$grid = new Grid;
-		$grid->column('radio')->field('version')->title('Version 1')->name('ver1');
-		$grid->column('radio')->field('version')->title('Version 2')->name('ver2');
-		$grid->column()->field('version')->title('Revision');
-		$grid->column()->field('editor')->title('Editor')->callback(array($this, 'print_username'));
-		$grid->column('date')->field('date')->title('Date');
-		$grid->column()->field('comments')->title('Comments')->callback(array($this, 'parse_comments'));
-		$grid->link('submit')->text('View Diff')
-			->action(Route::get('admin_main')->uri(array('controller'=>'page', 'action'=>'diff')) );
-		$grid->data($page->revisions);
-
-		// Setup HMVC view with data
-		$hmvc = View::factory('cms/pages/hmvc/history')
-			->set('page', $page)
-			->set('grid', $grid);
-
-		// Setup template view
-		$view = View::factory('cms/pages/history')
-			->set('menu', $this->menu())
-			->set('history', $hmvc);
-
-		// Set request response
-		$this->template->content = $this->internal_request ? $hmvc : $view;
-	}
-
-	/**
-	 * Parse comment array as unordered list
-	 *
-	 * @param   array   comments
-	 * @return  string
-	 */
-	public function parse_comments($comments) {
-		$return = '<ul>';
-		foreach ($comments as $comment)
-		{
-			$return .= '<li>'.$comment.'</li>';
-		}
-		$return .= '</ul>'.PHP_EOL;
-		return $return;
-	}
-
-	/**
-	 * Print username callback
-	 *
-	 * @param   object  user
-	 * @return  string
-	 */
-	public function print_username($user) {
-		if ( ! $user->loaded())
-		{
-			$user->load();
-		}
-		return $user->username;
+		$this->template->content = View::factory('cms/pages/history')
+			->bind('page', $this->_resource)
+			->bind('revisions', $revisions);
+		$revisions = $this->_resource->revisions;
 	}
 
 	/**
@@ -343,47 +150,16 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 	 */
 	public function action_diff() {
 		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Page::action_diff');
+		$this->template->content = View::factory('cms/pages/diff')
+			->bind('page', $this->_resource)
+			->bind('ver1', $ver1)
+			->bind('ver2', $ver2)
+			->bind('diff', $diff);
 
-		$id   = Request::instance()->param('id');
-		$ver1 = Request::instance()->param('ver1');
-		$ver2 = Request::instance()->param('ver2');
-		$page = Sprig::factory('page', array('id'=>$id))->load();
-
-		// If page is invalid, return to list
-		if ( ! $page->loaded())
-		{
-			$message = __('That page does not exist');
-
-			// Return message if an ajax request
-			if (Request::$is_ajax)
-			{
-				$this->template->content = $message;
-			}
-			// Else set flash message and redirect
-			else
-			{
-				Message::instance()->error($message);
-				Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-			}
-		}
-
-		// Restrict access
-		if ( ! $this->a2->allowed($page, 'edit'))
-		{
-			$message = __('You do not have permission to view revision history for :title.', array(':title'=>$page->title));
-
-			// Return message if an ajax request
-			if (Request::$is_ajax)
-			{
-				$this->template->content = $message;
-			}
-			// Else set flash message and redirect
-			else
-			{
-				Message::instance()->error($message);
-				Request::instance()->redirect( Route::get('admin_main')->uri(array('controller'=>'page')) );
-			}
-		}
+		// Bind locally
+		$page = & $this->_resource;
+		$ver1 = $this->request->param('ver1');
+		$ver2 = $this->request->param('ver2');
 
 		// Get versions of the text
 		$page->version($ver2);
@@ -392,21 +168,6 @@ class Controller_Admin_Page extends Controller_Template_Admin {
 		$old_text = $page->text;
 
 		$diff = Versioned::inline_diff($old_text, $new_text);
-
-		// Setup HMVC view with data
-		$hmvc = View::factory('cms/pages/hmvc/diff')
-			->set('page', $page)
-			->set('ver1', $ver1)
-			->set('ver2', $ver2)
-			->set('diff', $diff);
-
-		// Setup template view
-		$view = View::factory('cms/pages/diff')
-			->set('menu', $this->menu())
-			->set('diff', $hmvc);
-
-		// Set request response
-		$this->template->content = $this->internal_request ? $hmvc : $view;
 	}
 
 }	// End of Controller_Admin_Page

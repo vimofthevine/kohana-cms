@@ -1,9 +1,11 @@
 <?php defined('SYSPATH') OR die('No direct script access.');
 
 /**
- * Page controller
+ * Controller to handle page requests for
+ * static and dynamic content
  *
  * @package     CMS
+ * @category    Controller
  * @author      Kyle Treubig
  * @copyright   (c) 2010 Kyle Treubig
  * @license     MIT

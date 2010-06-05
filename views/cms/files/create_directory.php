@@ -1,4 +1,4 @@
-<h2>Create a Folder</h2>
+<h2><?php echo __('Create a Folder') ?></h2>
 <?php echo Form::open(); ?> 
 
 <p>
@@ -9,7 +9,7 @@
 <?php echo isset($errors['directory']) ? '<p class="error">'.$errors['directory'].'</p>': ''; ?> 
 <p>
 	<?php echo Form::label('directory', 'Folder Name'); ?> 
-	<?php echo Form::input('directory', $folder); ?> 
+	<?php echo Form::input('directory', $folder->name); ?> 
 </p>
 
 <p class="submit">

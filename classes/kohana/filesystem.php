@@ -4,6 +4,7 @@
  * Filesystem Library
  *
  * @package     Kohana
+ * @category    Helpers
  * @author      ExpressionEngine Dev Team
  * @copyright   Copyright (c) 2008, EllisLab, Inc.
  * @license     http://codeigniter.com/user_guide/license.html
