@@ -23,12 +23,17 @@ class Controller_Admin_Resource extends Controller_Admin {
 	protected $_acl_required = 'all';
 
 	protected $_view_map = array(
-		'create'  => 'admin/layout/narrow_column_with_menu',
-		'upload'  => 'admin/layout/narrow_column_with_menu',
-		'default' => 'admin/layout/wide_column_with_menu',
+		'create'  => 'admin/layout/narrow_column',
+		'upload'  => 'admin/layout/narrow_column',
+		'read'    => 'admin/layout/wide_column_with_menu',
+		'default' => 'admin/layout/wide_column',
 	);
 
-	protected $_current_nav = 'admin/page';
+	protected $_view_menu_map = array(
+		'read'    => 'cms/menu/read',
+	);
+
+	protected $_current_nav = 'admin/resource';
 
 	private $_base;
 
@@ -44,7 +49,7 @@ class Controller_Admin_Resource extends Controller_Admin {
 	 * Generate menu for asset management
 	 */
 	protected function _menu() {
-		return View::factory('cms/menu');
+		return View::factory('cms/menu/default');
 	}
 
 	/**
@@ -99,8 +104,11 @@ class Controller_Admin_Resource extends Controller_Admin {
 	 */
 	private function dir($dir) {
 		Kohana::$log->add(Kohana::DEBUG, 'Executing Controller_Admin_Asset::dir');
-		$this->template->content = View::factory('cms/files/directory_contents')
-			->bind('folder', $folder);
+		$this->template->content = View::factory('cms/files/directory_contents');
+	
+		// $folder is binded in global mode to be readable from 'content' and 'menu'
+		$this->template->bind_global('folder', $folder);
+
 		$folder = new Model_Resource_Folder($dir);
 		$folder->read_contents();
 	}

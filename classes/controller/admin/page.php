@@ -25,8 +25,12 @@ class Controller_Admin_Page extends Controller_Admin {
 	protected $_acl_required = 'all';
 
 	protected $_view_map = array(
-		'history' => 'admin/layout/wide_column',
-		'default' => 'admin/layout/wide_column_with_menu',
+		'edit' => 'admin/layout/wide_column_with_menu',
+		'default' => 'admin/layout/wide_column',
+	);
+
+	protected $_view_menu_map = array(
+		'edit' => 'cms/menu/edit',
 	);
 
 	protected $_current_nav = 'admin/page';
@@ -35,7 +39,7 @@ class Controller_Admin_Page extends Controller_Admin {
 	 * Generate menu for page management
 	 */
 	protected function _menu() {
-		return View::factory('cms/menu');
+		return View::factory('cms/menu/default');
 	}
 
 	/**
