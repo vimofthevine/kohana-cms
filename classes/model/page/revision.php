@@ -20,6 +20,25 @@ class Model_Page_Revision extends Versioned_Revision {
 		);
 	}
 
+	// Foreign keys helper, code taken from sprig/classes/sprig/core.php
+	public function fk($table = NULL)
+	{
+		$key = 'page_'.$this->_primary_key;
+
+		if ($table)
+		{
+			if ($table === TRUE)
+			{
+				$table = $this->_table;
+			}
+
+			return $table.'.'.$key;
+		}
+
+		return $key;
+	}
+
+
 	public function __get($key) {
 		if ($key == 'comments')
 		{
