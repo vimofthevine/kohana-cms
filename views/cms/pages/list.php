@@ -6,6 +6,8 @@ $(document).ready(function()
 ); 
 </script>
 
+<h2><?php echo __('Page List') ?></h2>
+
 <?php if (count($pages) == 0): ?>
 <p>
 	There are no pages at this time
