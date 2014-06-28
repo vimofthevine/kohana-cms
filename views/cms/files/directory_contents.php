@@ -1,13 +1,4 @@
-<h2><?php echo __(':dir directory', array(':dir'=>$folder)) ?> 
-	<small>
-		<?php echo HTML::anchor(Route::get('admin/resource')->uri(array(
-			'action' => 'create',
-			'path'   => $folder->parent.'/'.$folder->name)), 'Create Folder') ?>
-		<?php echo HTML::anchor(Route::get('admin/resource')->uri(array(
-			'action' => 'upload',
-			'path'   => $folder->parent.'/'.$folder->name)), 'Upload File') ?>
-	</small>
-</h2>
+<h2><?php echo __(':dir directory', array(':dir'=>$folder)) ?></h2>
 
 <?php
 	// Create directory listing
